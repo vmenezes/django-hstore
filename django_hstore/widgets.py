@@ -31,6 +31,7 @@ class BaseAdminHStoreWidget(AdminTextareaWidget):
 
         return forms.Media(js=js)
 
+
     def render(self, name, value, attrs=None):
         if attrs is None:
             attrs = {}
@@ -55,9 +56,74 @@ class BaseAdminHStoreWidget(AdminTextareaWidget):
         html = mark_safe(html)
 
         return html
+    
+
+from django.forms.widgets import flatatt
+import json
 
 
-class DefaultAdminHStoreWidget(BaseAdminHStoreWidget):
+class HStoreKeyValueInput(forms.Widget):
+    def __init__(self, *args, **kwargs):
+        self.key_attrs = {}
+        self.val_attrs = {}
+        if "key_attrs" in kwargs:
+            self.key_attrs = kwargs.pop("key_attrs")
+        if "val_attrs" in kwargs:
+            self.val_attrs = kwargs.pop("val_attrs")
+        forms.Widget.__init__(self, *args, **kwargs)
+        
+    def render(self, name, value, attrs=None):
+        if value is None:
+            value = '{}'
+        if type(value) == dict:
+            twotuple = value
+        else:
+            twotuple = json.loads(value)
+            
+        ret = ''
+        npt_html = '<input type="text" name="json_key[%(fieldname)s]" value="%(key)s" %(key_attrs)s> <input type="text" name="json_value[%(fieldname)s]" value="%(value)s" %(val_attrs)s><br />'
+        if value and len(value) > 0:
+            for k,v in twotuple.items():
+                ctx = {'key':k,
+                       'value':v,
+                       'fieldname':name,
+                       'key_attrs': flatatt(self.key_attrs),
+                       'val_attrs': flatatt(self.val_attrs) }
+                ret += npt_html % ctx
+        
+        ctx = {'key': '',
+               'value': '',
+               'fieldname':name,
+               'key_attrs': flatatt(self.key_attrs),
+               'val_attrs': flatatt(self.val_attrs) }
+        new_input = npt_html % ctx
+        ret += new_input
+        
+        ret += '<button id="btnNewKeyValue">New Key/Value</button>'
+        ret += '''
+        <script>
+        django.jQuery("#btnNewKeyValue").on("click", function(e){{
+            e.preventDefault();
+            django.jQuery('{}').insertBefore(this);
+        }})
+        </script>
+        '''.format(new_input)
+        return mark_safe(ret)
+        
+    def value_from_datadict(self, data, files, name):
+        keys = data.getlist("json_key[{}]".format(name))
+        values = data.getlist("json_value[{}]".format(name))
+        if keys and values:
+            data_dict = {}
+            for key, value in zip(keys, values):
+                if len(key) > 0:
+                    data_dict[key] = value
+            print(data_dict)
+            jsontext = json.dumps(data_dict)
+        return jsontext
+
+
+class DefaultAdminHStoreWidget(HStoreKeyValueInput):
     """
     Widget that displays the HStore contents
     in the default django-admin with a nice interactive UI
