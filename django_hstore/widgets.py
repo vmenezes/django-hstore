@@ -8,6 +8,8 @@ from django.template.loader import get_template
 from django.utils.safestring import mark_safe
 from django.conf import settings
 
+import json
+
 
 __all__ = [
     'AdminHStoreWidget'
@@ -31,6 +33,7 @@ class BaseAdminHStoreWidget(AdminTextareaWidget):
 
         return forms.Media(js=js)
 
+
     def render(self, name, value, attrs=None):
         if attrs is None:
             attrs = {}
@@ -38,7 +41,8 @@ class BaseAdminHStoreWidget(AdminTextareaWidget):
         attrs['class'] = 'hstore-original-textarea'
 
         # get default HTML from AdminTextareaWidget
-        html = super(BaseAdminHStoreWidget, self).render(name, value, attrs)
+        json_value =  json.dumps(value)
+        html = super(BaseAdminHStoreWidget, self).render(name, json_value, attrs)
 
         # prepare template context
         template_context = Context({
