@@ -47,8 +47,7 @@ var initDjangoHStoreWidget = function(hstore_field_name, inline_prefix) {
         if(original_value !== ''){
             // manage case in which textarea is blank
             try{
-                var normalized_value = original_value.replace(/'/g, '"');
-                json_data = JSON.parse(normalized_value);
+                json_data = JSON.parse(original_value);
             }
             catch(e){
                 alert('invalid JSON:\n'+e);
